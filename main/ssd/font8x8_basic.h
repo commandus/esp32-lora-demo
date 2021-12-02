@@ -22,7 +22,7 @@
    
 	for (int code = 0; code < 128; code++) {
 		uint8_t trans[8];
-		for (int w = 0; w < 8; w++) {
+		for (int w = 0; w < 8; w++) { 
 			trans[w] = 0x00;
 			for (int b = 0; b < 8; b++) {
 				trans[w] |= ((font8x8_basic[code][b] & (1 << w)) >> w) << b;

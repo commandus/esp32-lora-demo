@@ -1,4 +1,4 @@
-menu "Blink Configuration"
+menu "blinking Configuration"
 
     config BLINK_GPIO
         int "Blink GPIO number"

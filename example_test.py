@@ -11,7 +11,7 @@ from tiny_test_fw import Utility
 
 
 def verify_elf_sha256_embedding(dut):
-    elf_file = os.path.join(dut.app.binary_path, 'blink.elf')
+    elf_file = os.path.join(dut.app.binary_path, 'lorawanping.elf')
     sha256 = hashlib.sha256()
     with open(elf_file, 'rb') as f:
         sha256.update(f.read())
@@ -28,11 +28,11 @@ def verify_elf_sha256_embedding(dut):
 
 
 @ttfw_idf.idf_example_test(env_tag='Example_GENERIC', target=['esp32', 'esp32c3'])
-def test_examples_blink(env, extra_data):
-    dut = env.get_dut('blink', 'examples/get-started/blink')
-    binary_file = os.path.join(dut.app.binary_path, 'blink.bin')
+def test_examples_lorawanping(env, extra_data):
+    dut = env.get_dut('lorawanping', 'examples/get-started/lorawanping')
+    binary_file = os.path.join(dut.app.binary_path, 'lorawanping.bin')
     bin_size = os.path.getsize(binary_file)
-    ttfw_idf.log_performance('blink_bin_size', '{}KB'.format(bin_size // 1024))
+    ttfw_idf.log_performance('lorawanping_bin_size', '{}KB'.format(bin_size // 1024))
 
     dut.start_app()
 
@@ -40,4 +40,4 @@ def test_examples_blink(env, extra_data):
 
 
 if __name__ == '__main__':
-    test_examples_blink()
+    test_examples_lorawanping()
