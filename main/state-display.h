@@ -9,5 +9,4 @@ void displayInit(PingState *pingState);
 		displayInit(&pingState);
 	 	xTaskCreate(displayTask, "Display", 1000, &pingState, 1, NULL);
 */
-
 void displayTask(void *env);

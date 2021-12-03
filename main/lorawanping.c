@@ -4,6 +4,7 @@
 
 #include "blink.h"
 #include "state-display.h"
+#include "lmic-ping.h"
 
 void app_main(void)
 {
@@ -15,6 +16,9 @@ void app_main(void)
 
 	displayInit(&pingState);
 	xTaskCreate(displayTask, "Display", 1000, &pingState, 1, NULL);
+
+	lmicPingInit(&pingState);
+	xTaskCreate(lmicPingTask, "Lora", 1000, &pingState, 1, NULL);
 
 	while (1) {
 		vTaskDelay(1000 / portTICK_PERIOD_MS);
