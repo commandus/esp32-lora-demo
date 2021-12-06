@@ -12,13 +12,13 @@ void app_main(void)
 	pingStateInit(&pingState);
 
 	blinkInit(&pingState);
-	xTaskCreate(blinkTask, "Blink", 1000, &pingState, 1, NULL);
+	xTaskCreate(blinkTask, "Blink", 512, &pingState, 1, NULL);
 
 	displayInit(&pingState);
-	xTaskCreate(displayTask, "Display", 1000, &pingState, 1, NULL);
+	xTaskCreate(displayTask, "Display", 1024, &pingState, 1, NULL);
 
 	lmicPingInit(&pingState);
-	xTaskCreate(lmicPingTask, "Lora", 1000, &pingState, 1, NULL);
+	xTaskCreate(lmicPingTask, "Lora", 8000, &pingState, 1, NULL);	// 5000
 
 	while (1) {
 		vTaskDelay(1000 / portTICK_PERIOD_MS);
