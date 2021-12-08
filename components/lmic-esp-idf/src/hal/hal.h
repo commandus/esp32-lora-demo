@@ -26,4 +26,6 @@ typedef struct lmic_pinmap lmic_pinmap;
 // Use this for any unused pins.
 #define LMIC_UNUSED_PIN 0xFF
 
+void lmic_hal_init();
+
 #endif // _hal_hal_h_
