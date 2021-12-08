@@ -8,7 +8,7 @@
 
 #include "ping-state.h"
 
-void lmicPingInit(PingState *value);
+void lmicPingInit();
 
 void lmicPingTask(void *env);
 

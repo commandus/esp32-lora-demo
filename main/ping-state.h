@@ -16,15 +16,18 @@ typedef enum
 	LMS_INIT_FAILURE = 2,
 } LMIC_MODEM_STATE;
 
+typedef void(*ev_t_cb)(ev_t);
+
 typedef struct 
 {
-	int blinkCount;
+	uint32_t txQueuedCount;
+	uint32_t txCompleteCount;
 	SSD1306_t ssdDev;
 	LMIC_MODEM_STATE lmicModemState;
 	ev_t lmicEvent;
-
+	ev_t_cb evCallback;
 } PingState;
 
-void pingStateInit(PingState *value);
+void pingStateInit(ev_t_cb cb);
 
 #endif

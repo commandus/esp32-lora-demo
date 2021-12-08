@@ -1,6 +1,5 @@
 #include "lmic-ping.h"
 
-#include "lmic.h"
 #include "esp_event.h"
 #include "nvs_flash.h"
 #include "esp_log.h"
@@ -36,7 +35,7 @@ void os_getArtEui (u1_t* buf) { }
 void os_getDevEui (u1_t* buf) { }
 void os_getDevKey (u1_t* buf) { }
 
-PingState *pingState = NULL;
+extern PingState pingState;
 
 #define LOG_TAG_PING "lora-ping" 
 
@@ -48,12 +47,14 @@ void ping(osjob_t* job)
     } else {
         // Prepare upstream data transmission at the next possible time.
         LMIC_setTxData2(1, payload, sizeof(payload) - 1, 0);
+		pingState.txQueuedCount++;
         ESP_LOGI(LOG_TAG_PING, "Packet queued");
     }
 }
 
-void onEvent (ev_t ev) {
-	ESP_LOGI(LOG_TAG_PING, "event");
+void onEvent(ev_t ev) {
+	pingState.evCallback(ev);
+	
     switch(ev) {
         case EV_SCAN_TIMEOUT:
             ESP_LOGI(LOG_TAG_PING, "EV_SCAN_TIMEOUT");
@@ -84,6 +85,8 @@ void onEvent (ev_t ev) {
             break;
         case EV_TXCOMPLETE:
             ESP_LOGI(LOG_TAG_PING, "EV_TXCOMPLETE (includes waiting for RX windows)");
+			pingState.txCompleteCount++;
+
             if (LMIC.txrxFlags & TXRX_ACK)
               	ESP_LOGI(LOG_TAG_PING, "Received ack");
             if (LMIC.dataLen) {
@@ -114,9 +117,9 @@ void onEvent (ev_t ev) {
     }
 }
 
-void lmicPingInit(PingState *value)
+void lmicPingInit()
 {
-    // LMIC init
+	// LMIC init
     os_init();
 	// Reset the MAC state. Session and pending data transfers will be discarded.
     LMIC_reset();
@@ -143,9 +146,7 @@ void lmicPingInit(PingState *value)
   	// This sets CR 4/5, BW125 (except for DR_SF7B, which uses BW250)
   	// LMIC.rps = updr2rps(LMIC.datarate);
 
-    if (value) {
-	   value->lmicModemState = LMS_INIT_SUCCESS;
-    }
+    pingState.lmicModemState = LMS_INIT_SUCCESS;
 
     ping(&sendjob);
 }
@@ -153,7 +154,6 @@ void lmicPingInit(PingState *value)
 void lmicPingTask(void *env)
 {
 	
-    pingState = (PingState *) env;
     while (1) {
         os_runloop_once();
 		vTaskDelay(10 * 1000 / portTICK_PERIOD_MS);
