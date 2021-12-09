@@ -19,7 +19,7 @@
 #include "driver/timer.h"
 #include "esp_log.h"
 
-#define TAG "lmic"
+#define TAG_LMIC "lmic"
 
 // Declared here, to be defined an initialized by the application
 extern const lmic_pinmap lmic_pins;
@@ -29,7 +29,7 @@ extern const lmic_pinmap lmic_pins;
 
 static void hal_io_init () {
     int i;
-    ESP_LOGI(TAG, "Starting IO initialization");
+    ESP_LOGI(TAG_LMIC, "I/O init..");
 
     gpio_config_t io_conf;
     io_conf.intr_type = GPIO_PIN_INTR_DISABLE;
@@ -51,7 +51,7 @@ static void hal_io_init () {
 	}
     gpio_config(&io_conf);
 
-    ESP_LOGI(TAG, "Finished IO initialization");
+    ESP_LOGI(TAG_LMIC, "I/O initialized");
 }
 
 // val == 1  => tx 1
@@ -85,7 +85,7 @@ void hal_pin_rst (u1_t val) {
     }
 }
 
-static bool dio_states[NUM_DIO] = {0};
+static bool dio_states[NUM_DIO] = { 0 };
 
 static void hal_io_check() {
     uint8_t i;
@@ -107,7 +107,7 @@ static void hal_io_check() {
 spi_device_handle_t spi_handle;
 
 static void hal_spi_init () {
-    ESP_LOGI(TAG, "Starting SPI initialization");
+    ESP_LOGI(TAG_LMIC, "SPI init..");
     esp_err_t ret;
 
     // init master
@@ -133,7 +133,7 @@ static void hal_spi_init () {
     ret = spi_bus_add_device(LMIC_SPI, &devcfg, &spi_handle);
     assert(ret == ESP_OK);
 
-    ESP_LOGI(TAG, "Finished SPI initialization");
+    ESP_LOGI(TAG_LMIC, "SPI initialized");
 }
 
 // perform SPI transaction with radio
@@ -155,7 +155,7 @@ u1_t hal_spi (u1_t data) {
 // TIME
 
 static void hal_time_init () {
-  ESP_LOGI(TAG, "Starting initialisation of timer");
+  ESP_LOGI(TAG_LMIC, "Timer init..");
   int timer_group = TIMER_GROUP_0;
   int timer_idx = TIMER_1;
   timer_config_t config;
@@ -174,7 +174,7 @@ static void hal_time_init () {
   /*Start timer counter*/
   timer_start(timer_group, timer_idx);
 
-  ESP_LOGI(TAG, "Finished initalisation of timer");
+  ESP_LOGI(TAG_LMIC, "Timer initialized");
 }
 
 u4_t hal_ticks () {
@@ -191,17 +191,17 @@ static s4_t delta_time(u4_t time) {
 
 
 void hal_waitUntil (u4_t time) {
-
-    ESP_LOGI(TAG, "Wait until");
     s4_t delta = delta_time(time);
+    ESP_LOGI(TAG_LMIC, "Wait..");
 
-    while( delta > 2000){
-        vTaskDelay(1 / portTICK_PERIOD_MS);
+    while (delta > 2000) {
+        vTaskDelay(1000 / portTICK_PERIOD_MS);
         delta -= 1000;
-    } if(delta > 0){
+    }
+    if (delta > 0) {
         vTaskDelay(delta / portTICK_PERIOD_MS);
     }
-    ESP_LOGI(TAG, "Done waiting until");
+    ESP_LOGI(TAG_LMIC, "Wait done");
 }
 
 // check and rewind for target time
@@ -215,7 +215,7 @@ u1_t hal_checkTimer (u4_t time) {
 int x_irq_level = 0;
 
 void hal_disableIRQs () {
-  //ESP_LOGD(TAG, "Disabling interrupts");
+  //ESP_LOGD(TAG_LMIC, "Disabling interrupts");
   if(x_irq_level < 1){
       //taskDISABLE_INTERRUPTS();
   }
@@ -223,7 +223,7 @@ void hal_disableIRQs () {
 }
 
 void hal_enableIRQs () {
-  //ESP_LOGD(TAG, "Enable interrupts");
+  //ESP_LOGD(TAG_LMIC, "Enable interrupts");
   if(--x_irq_level == 0){
       //taskENABLE_INTERRUPTS();
       hal_io_check();
@@ -260,7 +260,7 @@ void lmic_hal_init() {
 
 void hal_failed(const char *file, u2_t line) {
     // HALT...
-	ESP_LOGE(TAG, "LMIC HAL failed (%s:%u)", file, line);
+	ESP_LOGE(TAG_LMIC, "LMIC HAL failed (%s:%u)", file, line);
     hal_disableIRQs();
     hal_sleep();
     while(1);
