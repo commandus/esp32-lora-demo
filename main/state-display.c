@@ -95,6 +95,7 @@ void updateScreen()
 		}
 	}
 
+	ssd1306_clear_line(&pingState.ssdDev, 4, false);
 	switch(pingState.lmicEvent) {
 		case EV_SCAN_TIMEOUT:
 			ssd1306_display_text(&pingState.ssdDev, 4, "Scan timeout", 12, false);
@@ -123,19 +124,6 @@ void updateScreen()
 		case EV_REJOIN_FAILED:
 			ssd1306_display_text(&pingState.ssdDev, 4, "Rejoin failed", 13, false);
 			break;
-		case EV_TXCOMPLETE:
-			{
-				pingState.txCompleteCount++;
-				size_t sz = snprintf(line, sizeof(line), "TX %d:%d", pingState.txQueuedCount, pingState.txCompleteCount);
-				ssd1306_display_text(&pingState.ssdDev, 4, line, sz, false);
-				if (LMIC.txrxFlags & TXRX_ACK)
-					ssd1306_display_text(&pingState.ssdDev, 4, "ACK", 3, false);
-				if (LMIC.dataLen) {
-						int sz = snprintf(line, sizeof(line), "Payload %6d", LMIC.dataLen);
-						ssd1306_display_text(&pingState.ssdDev, 4, line, sz, false);
-				}
-			}
-			break;
 		case EV_LOST_TSYNC:
 			ssd1306_display_text(&pingState.ssdDev, 4, "Lost TSYNC", 10, false);
 			break;
@@ -152,8 +140,17 @@ void updateScreen()
 		case EV_LINK_ALIVE:
 			ssd1306_display_text(&pingState.ssdDev, 4, "Link alive", 10, false);
 			break;
-		default:
-			ssd1306_display_text(&pingState.ssdDev, 4, "Unknown", 7, false);
+		default:	//EV_TXCOMPLETE:
+			{
+				size_t sz = snprintf(line, sizeof(line), "TX %d:%d", pingState.txQueuedCount, pingState.txCompleteCount);
+				ssd1306_display_text(&pingState.ssdDev, 4, line, sz, false);
+				if (LMIC.txrxFlags & TXRX_ACK)
+					ssd1306_display_text(&pingState.ssdDev, 4, "ACK", 3, false);
+				if (LMIC.dataLen) {
+						int sz = snprintf(line, sizeof(line), "Payload %6d", LMIC.dataLen);
+						ssd1306_display_text(&pingState.ssdDev, 4, line, sz, false);
+				}
+			}
 			break;
 	}
 }

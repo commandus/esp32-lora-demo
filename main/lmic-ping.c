@@ -49,6 +49,7 @@ void ping(osjob_t* job)
         LMIC_setTxData2(1, payload, sizeof(payload) - 1, 0);
 		pingState.txQueuedCount++;
         ESP_LOGI(LOG_TAG_PING, "Packet queued");
+        pingState.evCallback(0);
     }
 }
 

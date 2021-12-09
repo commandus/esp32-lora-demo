@@ -14,7 +14,7 @@ void app_main(void)
 
 	displayInit();
 
-	// wifiScanInit();
+	wifiScanInit();
 
 	lmicPingInit();
 	// xTaskCreate(lmicPingTask, "Lora", 4096, &pingState, 1, NULL);	// 5000
