@@ -12,12 +12,12 @@ void app_main(void)
 {
 	pingStateInit(&displayEvent);
 
-	displayInit();
+	//displayInit();
 
 	wifiScanInit();
 
-	lmicPingInit();
+	//lmicPingInit();
 	// xTaskCreate(lmicPingTask, "Lora", 4096, &pingState, 1, NULL);	// 5000
 
-	lmicPingTask(NULL);
+	//lmicPingTask(NULL);
 }

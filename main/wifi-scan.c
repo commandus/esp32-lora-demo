@@ -86,9 +86,9 @@ void wifiScanInit()
 
 	ESP_ERROR_CHECK(esp_wifi_set_mode(WIFI_MODE_AP));
     ESP_ERROR_CHECK(esp_wifi_set_config(WIFI_IF_AP, &wifi_config));
-    ESP_ERROR_CHECK(esp_wifi_set_event_mask(WIFI_EVENT_MASK_ALL));
+    ESP_ERROR_CHECK(esp_wifi_set_event_mask(WIFI_EVENT_MASK_NONE));
 	ESP_ERROR_CHECK(esp_wifi_start());
-
+	
     ESP_LOGI(LOG_TAG_WIFI, "wifi_init_softap finished. SSID:%s password: %s channel: %d",
         wifi_config.ap.ssid, wifi_config.ap.password, wifi_config.ap.channel);
 }
