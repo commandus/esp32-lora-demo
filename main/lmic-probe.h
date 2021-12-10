@@ -6,10 +6,12 @@
 #include "driver/gpio.h"
 #include "sdkconfig.h"
 
-#include "ping-state.h"
+#include "probe-state.h"
 
-void lmicPingInit();
+void lmicProbeInit();
 
-void lmicPingTask(void *env);
+void lmicProbeTask(void *env);
+
+void sendProbe(probe_ev_t *probe);
 
 #endif

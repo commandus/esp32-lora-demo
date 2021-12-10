@@ -1,5 +1,5 @@
-#ifndef PING_STATE_H_
-#define PING_STATE_H_	1
+#ifndef PROBE_STATE_H_
+#define PROBE_STATE_H_	1
 
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
@@ -16,7 +16,16 @@ typedef enum
 	LMS_INIT_FAILURE = 2,
 } LMIC_MODEM_STATE;
 
-typedef void(*ev_t_cb)(ev_t);
+typedef struct {
+	uint8_t tag;	// 'B'- bluetooth 'W'- Wi-Fi
+	int8_t rssi;
+	uint8_t mac[6];
+
+} probe_ev_t;
+
+typedef void(*lora_ev_t_cb)(ev_t);
+
+typedef void(*probe_ev_t_cb)(probe_ev_t*);
 
 typedef struct 
 {
@@ -25,9 +34,10 @@ typedef struct
 	SSD1306_t ssdDev;
 	LMIC_MODEM_STATE lmicModemState;
 	ev_t lmicEvent;
-	ev_t_cb evCallback;
-} PingState;
+	lora_ev_t_cb loraEventCallback;
+	probe_ev_t_cb probeEventCallback;
+} ProbeState;
 
-void pingStateInit(ev_t_cb cb);
+void probeStateInit(lora_ev_t_cb loraCallback, probe_ev_t_cb probeCallback);
 
 #endif

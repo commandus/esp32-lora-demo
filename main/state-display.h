@@ -1,5 +1,5 @@
-#include "ping-state.h"
+#include "probe-state.h"
 
 void displayInit();
 
-void displayEvent(ev_t event);
+void displayLoraEvent(ev_t event);

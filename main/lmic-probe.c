@@ -1,4 +1,4 @@
-#include "lmic-ping.h"
+#include "lmic-probe.h"
 
 #include "esp_event.h"
 #include "nvs_flash.h"
@@ -17,8 +17,6 @@ static const u4_t DEVADDR = 0x01450340 ; // 01450330 <-- Change this address for
 #define TX_INTERVAL 60
 static osjob_t sendjob;
 
-static uint8_t payload[] = "Hello, world";
-
 // Pin mapping 
 const lmic_pinmap lmic_pins = {
     .nss = 5,
@@ -35,90 +33,95 @@ void os_getArtEui (u1_t* buf) { }
 void os_getDevEui (u1_t* buf) { }
 void os_getDevKey (u1_t* buf) { }
 
-extern PingState pingState;
+extern ProbeState probeState;
 
-#define LOG_TAG_PING "lora-ping" 
+probe_ev_t probeEventCopy;
 
-void ping(osjob_t* job)
+#define LOG_TAG_LMIC "lora-probe" 
+
+void sendProbeJob(osjob_t* job)
 {
     // Check if there is not a current TX/RX job running
     if (LMIC.opmode & OP_TXRXPEND) {
-        ESP_LOGI(LOG_TAG_PING, "OP_TXRXPEND, not sending");
+        ESP_LOGI(LOG_TAG_LMIC, "OP_TXRXPEND, not sending");
+        // Schedule next transmission
+        ESP_LOGI(LOG_TAG_LMIC, "Trying to shedule");
+        os_setTimedCallback(job, os_getTime() + sec2osticks(TX_INTERVAL), sendProbeJob);
     } else {
         // Prepare upstream data transmission at the next possible time.
-        LMIC_setTxData2(1, payload, sizeof(payload) - 1, 0);
-		pingState.txQueuedCount++;
-        ESP_LOGI(LOG_TAG_PING, "Packet queued");
-        pingState.evCallback(0);
+        LMIC_setTxData2(1, (void*) &probeEventCopy, sizeof(probe_ev_t), 0);
+		probeState.txQueuedCount++;
+        ESP_LOGI(LOG_TAG_LMIC, "Packet queued");
+        probeState.loraEventCallback(0);
     }
 }
 
 void onEvent(ev_t ev) {
-	pingState.evCallback(ev);
+	probeState.loraEventCallback(ev);
 	
     switch(ev) {
         case EV_SCAN_TIMEOUT:
-            ESP_LOGI(LOG_TAG_PING, "EV_SCAN_TIMEOUT");
+            ESP_LOGI(LOG_TAG_LMIC, "EV_SCAN_TIMEOUT");
             break;
         case EV_BEACON_FOUND:
-            ESP_LOGI(LOG_TAG_PING, "EV_BEACON_FOUND");
+            ESP_LOGI(LOG_TAG_LMIC, "EV_BEACON_FOUND");
             break;
         case EV_BEACON_MISSED:
-            ESP_LOGI(LOG_TAG_PING, "EV_BEACON_MISSED");
+            ESP_LOGI(LOG_TAG_LMIC, "EV_BEACON_MISSED");
             break;
         case EV_BEACON_TRACKED:
-            ESP_LOGI(LOG_TAG_PING, "EV_BEACON_TRACKED");
+            ESP_LOGI(LOG_TAG_LMIC, "EV_BEACON_TRACKED");
             break;
         case EV_JOINING:
-            ESP_LOGI(LOG_TAG_PING, "EV_JOINING");
+            ESP_LOGI(LOG_TAG_LMIC, "EV_JOINING");
             break;
         case EV_JOINED:
-            ESP_LOGI(LOG_TAG_PING, "EV_JOINED");
+            ESP_LOGI(LOG_TAG_LMIC, "EV_JOINED");
             break;
         case EV_RFU1:
-            ESP_LOGI(LOG_TAG_PING, "EV_RFU1");
+            ESP_LOGI(LOG_TAG_LMIC, "EV_RFU1");
             break;
         case EV_JOIN_FAILED:
-            ESP_LOGI(LOG_TAG_PING, "EV_JOIN_FAILED");
+            ESP_LOGI(LOG_TAG_LMIC, "EV_JOIN_FAILED");
             break;
         case EV_REJOIN_FAILED:
-            ESP_LOGI(LOG_TAG_PING, "EV_REJOIN_FAILED");
+            ESP_LOGI(LOG_TAG_LMIC, "EV_REJOIN_FAILED");
             break;
         case EV_TXCOMPLETE:
-            ESP_LOGI(LOG_TAG_PING, "EV_TXCOMPLETE (includes waiting for RX windows)");
-			pingState.txCompleteCount++;
+            ESP_LOGI(LOG_TAG_LMIC, "EV_TXCOMPLETE (includes waiting for RX windows)");
+			probeState.txCompleteCount++;
 
             if (LMIC.txrxFlags & TXRX_ACK)
-              	ESP_LOGI(LOG_TAG_PING, "Received ack");
+              	ESP_LOGI(LOG_TAG_LMIC, "Received ack");
             if (LMIC.dataLen) {
-				ESP_LOGI(LOG_TAG_PING, "Payload");
+				ESP_LOGI(LOG_TAG_LMIC, "Payload");
             }
 			// Schedule next transmission
-            os_setTimedCallback(&sendjob, os_getTime()+sec2osticks(TX_INTERVAL), ping);
+            // os_setTimedCallback(&sendjob, os_getTime()+sec2osticks(TX_INTERVAL), sendProbeJob);
             break;
         case EV_LOST_TSYNC:
-            ESP_LOGI(LOG_TAG_PING, "EV_LOST_TSYNC");
+            ESP_LOGI(LOG_TAG_LMIC, "EV_LOST_TSYNC");
             break;
         case EV_RESET:
-            ESP_LOGI(LOG_TAG_PING, "EV_RESET");
+            ESP_LOGI(LOG_TAG_LMIC, "EV_RESET");
             break;
         case EV_RXCOMPLETE:
             // data received in ping slot
-            ESP_LOGI(LOG_TAG_PING, "EV_RXCOMPLETE");
+            ESP_LOGI(LOG_TAG_LMIC, "EV_RXCOMPLETE");
             break;
         case EV_LINK_DEAD:
-            ESP_LOGI(LOG_TAG_PING, "EV_LINK_DEAD");
+            ESP_LOGI(LOG_TAG_LMIC, "EV_LINK_DEAD");
             break;
         case EV_LINK_ALIVE:
-            ESP_LOGI(LOG_TAG_PING, "EV_LINK_ALIVE");
+            ESP_LOGI(LOG_TAG_LMIC, "EV_LINK_ALIVE");
             break;
          default:
-            ESP_LOGI(LOG_TAG_PING, "Unknown event");
+            ESP_LOGI(LOG_TAG_LMIC, "Unknown event");
             break;
     }
 }
 
-void lmicPingInit()
+void lmicProbeInit()
 {
 	// LMIC init
     os_init();
@@ -147,12 +150,11 @@ void lmicPingInit()
   	// This sets CR 4/5, BW125 (except for DR_SF7B, which uses BW250)
   	// LMIC.rps = updr2rps(LMIC.datarate);
 
-    pingState.lmicModemState = LMS_INIT_SUCCESS;
+    probeState.lmicModemState = LMS_INIT_SUCCESS;
 
-    ping(&sendjob);
 }
 
-void lmicPingTask(void *env)
+void lmicProbeTask(void *env)
 {
 	
     while (1) {
@@ -160,4 +162,15 @@ void lmicPingTask(void *env)
 		vTaskDelay(10 * 1000 / portTICK_PERIOD_MS);
     }
     vTaskDelete(NULL);
+}
+
+void sendProbe(probe_ev_t *probe)
+{
+    if (probe) {
+        probeEventCopy.tag = 'W';
+        probeEventCopy.rssi = probe->rssi;
+        memmove(&probeEventCopy.mac, probe->mac, sizeof(probeEventCopy.mac));
+    }
+        
+    sendProbeJob(&sendjob);
 }

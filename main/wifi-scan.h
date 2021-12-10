@@ -1,3 +1,3 @@
-#include "ping-state.h"
+#include "probe-state.h"
 
 void wifiScanInit();

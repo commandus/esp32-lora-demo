@@ -9,7 +9,7 @@
 
 #define LOG_TAG_WIFI "WiFi" 
 
-extern PingState pingState;
+extern ProbeState probeState;
 
 // Initialize NVS
 
@@ -46,6 +46,7 @@ static void wifi_event_handler(void* arg, esp_event_base_t event_base, int32_t e
 		{
 			wifi_event_ap_probe_req_rx_t *event = (wifi_event_ap_probe_req_rx_t*) event_data;
 			ESP_LOGI(LOG_TAG_WIFI, "Probe "MACSTR" rssi: %d", MAC2STR(event->mac), event->rssi);
+			probeState.probeEventCallback(event);
 		}
 		break;
 		default:

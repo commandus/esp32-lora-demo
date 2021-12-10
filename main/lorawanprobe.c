@@ -3,21 +3,21 @@
 #include <string.h>
 
 #include "state-display.h"
-#include "lmic-ping.h"
+#include "lmic-probe.h"
 #include "wifi-scan.h"
 
-PingState pingState;
+ProbeState probeState;
 
 void app_main(void)
 {
-	pingStateInit(&displayEvent);
+	probeStateInit(&displayLoraEvent, &sendProbe);
 
-	//displayInit();
+	displayInit();
 
 	wifiScanInit();
 
-	//lmicPingInit();
+	lmicProbeInit();
 	// xTaskCreate(lmicPingTask, "Lora", 4096, &pingState, 1, NULL);	// 5000
 
-	//lmicPingTask(NULL);
+	lmicProbeTask(NULL);
 }
