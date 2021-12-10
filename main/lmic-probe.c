@@ -35,7 +35,7 @@ void os_getDevKey (u1_t* buf) { }
 
 extern ProbeState probeState;
 
-probe_ev_t probeEventCopy;
+probe_ev_t *probeEventCopy;
 
 #define LOG_TAG_LMIC "lora-probe" 
 
@@ -45,11 +45,10 @@ void sendProbeJob(osjob_t* job)
     if (LMIC.opmode & OP_TXRXPEND) {
         ESP_LOGI(LOG_TAG_LMIC, "OP_TXRXPEND, not sending");
         // Schedule next transmission
-        ESP_LOGI(LOG_TAG_LMIC, "Trying to shedule");
-        os_setTimedCallback(job, os_getTime() + sec2osticks(TX_INTERVAL), sendProbeJob);
+        // os_setTimedCallback(job, os_getTime() + sec2osticks(TX_INTERVAL), sendProbeJob);
     } else {
         // Prepare upstream data transmission at the next possible time.
-        LMIC_setTxData2(1, (void*) &probeEventCopy, sizeof(probe_ev_t), 0);
+        LMIC_setTxData2(1, (void*) probeEventCopy, sizeof(probe_ev_t), 0);
 		probeState.txQueuedCount++;
         ESP_LOGI(LOG_TAG_LMIC, "Packet queued");
         probeState.loraEventCallback(0);
@@ -166,11 +165,7 @@ void lmicProbeTask(void *env)
 
 void sendProbe(probe_ev_t *probe)
 {
-    if (probe) {
-        probeEventCopy.tag = 'W';
-        probeEventCopy.rssi = probe->rssi;
-        memmove(&probeEventCopy.mac, probe->mac, sizeof(probeEventCopy.mac));
-    }
-        
+    if (probe)
+        probeEventCopy = probe;
     sendProbeJob(&sendjob);
 }
