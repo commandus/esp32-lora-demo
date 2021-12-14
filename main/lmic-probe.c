@@ -22,7 +22,7 @@ const lmic_pinmap lmic_pins = {
     .nss = 5,
     .rxtx = LMIC_UNUSED_PIN,
     .rst = 14,
-    .dio = {26, 34, 35},	// 0, 1, 2
+    .dio = {26, 34, LMIC_UNUSED_PIN},	// 0- 26, 1- 34, 2- 35
     .spi = {19, 23, 18}		// MISO, MOSI, SCK
 };
 
@@ -53,6 +53,38 @@ void sendProbeJob(osjob_t* job)
         ESP_LOGI(LOG_TAG_LMIC, "Packet queued");
         probeState.loraEventCallback(0);
     }
+}
+
+void lmicProbeInit()
+{
+	// LMIC init
+    os_init();
+	// Reset the MAC state. Session and pending data transfers will be discarded.
+    LMIC_reset();
+    LMIC_setSession(1, DEVADDR, NWKSKEY, APPSKEY);
+
+    LMIC_setupChannel(0, 868900000, DR_RANGE_MAP(DR_SF12, DR_SF7), BAND_CENTI);
+    LMIC_setupChannel(1, 869100000, DR_RANGE_MAP(DR_SF12, DR_SF7), BAND_CENTI);
+
+	// Disable link check validation
+    LMIC_setLinkCheckMode(0);
+
+    // TTN uses SF9 for its RX2 window.
+    LMIC.dn2Dr = DR_SF9;
+    LMIC.freq = 869100000;
+  	// Use a medium spread factor. This can be increased up to SF12 for
+  	// better range, but then the interval should be (significantly)
+  	// lowered to comply with duty cycle limits as well.
+    LMIC.datarate = DR_SF9;
+
+    // Set data rate and transmit power for uplink (note: txpow seems to be ignored by the library)
+    LMIC.txpow = 14;
+    LMIC_setDrTxpow(DR_SF7, 14);
+
+  	// This sets CR 4/5, BW125 (except for DR_SF7B, which uses BW250)
+  	// LMIC.rps = updr2rps(LMIC.datarate);
+
+    probeState.lmicModemState = LMS_INIT_SUCCESS;
 }
 
 void onEvent(ev_t ev) {
@@ -114,43 +146,14 @@ void onEvent(ev_t ev) {
         case EV_LINK_ALIVE:
             ESP_LOGI(LOG_TAG_LMIC, "EV_LINK_ALIVE");
             break;
-         default:
+        case EV_REINIT_REQUEST:
+            ESP_LOGI(LOG_TAG_LMIC, "EV_REINIT_REQUEST");
+            lmicProbeInit();
+            break;
+        default:
             ESP_LOGI(LOG_TAG_LMIC, "Unknown event");
             break;
     }
-}
-
-void lmicProbeInit()
-{
-	// LMIC init
-    os_init();
-	// Reset the MAC state. Session and pending data transfers will be discarded.
-    LMIC_reset();
-    LMIC_setSession(1, DEVADDR, NWKSKEY, APPSKEY);
-
-    LMIC_setupChannel(0, 868900000, DR_RANGE_MAP(DR_SF12, DR_SF7), BAND_CENTI);
-    LMIC_setupChannel(1, 869100000, DR_RANGE_MAP(DR_SF12, DR_SF7), BAND_CENTI);
-
-	// Disable link check validation
-    LMIC_setLinkCheckMode(0);
-
-    // TTN uses SF9 for its RX2 window.
-    LMIC.dn2Dr = DR_SF9;
-    LMIC.freq = 869100000;
-  	// Use a medium spread factor. This can be increased up to SF12 for
-  	// better range, but then the interval should be (significantly)
-  	// lowered to comply with duty cycle limits as well.
-    LMIC.datarate = DR_SF9;
-
-    // Set data rate and transmit power for uplink (note: txpow seems to be ignored by the library)
-    LMIC.txpow = 14;
-    LMIC_setDrTxpow(DR_SF7, 14);
-
-  	// This sets CR 4/5, BW125 (except for DR_SF7B, which uses BW250)
-  	// LMIC.rps = updr2rps(LMIC.datarate);
-
-    probeState.lmicModemState = LMS_INIT_SUCCESS;
-
 }
 
 void lmicProbeTask(void *env)
