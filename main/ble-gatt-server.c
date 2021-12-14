@@ -13,13 +13,23 @@
 #include "esp_gatt_common_api.h"
 
 #include "ble-gatt-server.h"
+#include "lmic-probe.h"
 
-#define GATTS_TABLE_TAG "GATTS_TABLE_DEMO"
+void sendLoraWanMAC(void *mac) {
+	probe_ev_t probe;
+	probe.tag = 'B';
+	probe.rssi = 0;
+
+	memmove(&probe.mac, mac, sizeof(probe.mac));
+	sendProbe(&probe);
+}
+
+#define GATTS_TABLE_TAG "GATTS_LORA"
 
 #define PROFILE_NUM                 1
 #define PROFILE_APP_IDX             0
 #define ESP_APP_ID                  0x55
-#define SAMPLE_DEVICE_NAME          "ESP_GATTS_DEMO"
+#define BLE_DEVICE_NAME             "ESP_GATTS_LORAWAN"
 #define SVC_INST_ID                 0
 
 /* The max length of characteristic value. When the GATT client performs a write or prepare write operation,
@@ -33,6 +43,7 @@
 #define SCAN_RSP_CONFIG_FLAG        (1 << 1)
 
 static uint8_t adv_config_done       = 0;
+
 
 uint16_t heart_rate_handle_table[HRS_IDX_NB];
 
@@ -325,7 +336,7 @@ static void gatts_profile_event_handler(esp_gatts_cb_event_t event, esp_gatt_if_
 {
     switch (event) {
         case ESP_GATTS_REG_EVT:{
-            esp_err_t set_dev_name_ret = esp_ble_gap_set_device_name(SAMPLE_DEVICE_NAME);
+            esp_err_t set_dev_name_ret = esp_ble_gap_set_device_name(BLE_DEVICE_NAME);
             if (set_dev_name_ret){
                 ESP_LOGE(GATTS_TABLE_TAG, "set device name failed, error code = %x", set_dev_name_ret);
             }
@@ -424,6 +435,7 @@ static void gatts_profile_event_handler(esp_gatts_cb_event_t event, esp_gatt_if_
             break;
         case ESP_GATTS_CONNECT_EVT:
             ESP_LOGI(GATTS_TABLE_TAG, "ESP_GATTS_CONNECT_EVT, conn_id = %d", param->connect.conn_id);
+			sendLoraWanMAC(&param->connect.remote_bda);
             esp_log_buffer_hex(GATTS_TABLE_TAG, param->connect.remote_bda, 6);
             esp_ble_conn_update_params_t conn_params = {0};
             memcpy(conn_params.bda, param->connect.remote_bda, sizeof(esp_bd_addr_t));
