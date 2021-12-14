@@ -11,6 +11,9 @@
 
 #include "lmic.h"
 
+#include "esp_log.h"
+extern void reportEvent (ev_t ev);
+
 // ----------------------------------------
 // Registers Mapping
 #define RegFifo                                    0x00 // common
@@ -658,7 +661,13 @@ static void rxfsk (u1_t rxmode) {
 }
 
 static void startrx (u1_t rxmode) {
-    ASSERT( (readReg(RegOpMode) & OPMODE_MASK) == OPMODE_SLEEP );
+    u1_t rop = readReg(RegOpMode);
+    if ((rop & OPMODE_MASK) != OPMODE_SLEEP) {
+        ESP_LOGE("**RADIO**", "rop & OPMODE_MASK) != OPMODE_SLEEP: rop: %d", rop);
+        reportEvent(EV_REINIT_REQUEST);
+        return;
+    }
+    ASSERT( (rop & OPMODE_MASK) == OPMODE_SLEEP );
     if(getSf(LMIC.rps) == FSK) { // FSK modem
         rxfsk(rxmode);
     } else { // LoRa modem

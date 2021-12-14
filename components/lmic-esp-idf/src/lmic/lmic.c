@@ -940,7 +940,8 @@ static void runEngineUpdate (xref2osjob_t osjob) {
 }
 
 
-static void reportEvent (ev_t ev) {
+// static 
+void reportEvent (ev_t ev) {
     EV(devCond, INFO, (e_.reason = EV::devCond_t::LMIC_EV,
                        e_.eui    = MAIN::CDEV->getEui(),
                        e_.info   = ev));
