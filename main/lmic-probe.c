@@ -36,21 +36,34 @@ void os_getDevKey (u1_t* buf) { }
 extern ProbeState probeState;
 
 probe_ev_t probeEventCopy;
+text_message_ev_t textMessageCopy;
 
 #define LOG_TAG_LMIC "lora-probe" 
 
-void sendProbeJob(osjob_t* job)
+static void sendProbeJob(osjob_t* job)
 {
     // Check if there is not a current TX/RX job running
     if (LMIC.opmode & OP_TXRXPEND) {
         ESP_LOGI(LOG_TAG_LMIC, "OP_TXRXPEND, not sending");
-        // Schedule next transmission
-        // os_setTimedCallback(job, os_getTime() + sec2osticks(TX_INTERVAL), sendProbeJob);
     } else {
         // Prepare upstream data transmission at the next possible time.
         LMIC_setTxData2(1, (void*) &probeEventCopy, sizeof(probe_ev_t), 0);
 		probeState.txQueuedCount++;
         ESP_LOGI(LOG_TAG_LMIC, "Packet queued");
+        probeState.loraEventCallback(0);
+    }
+}
+
+static void sendTextMessageJob(osjob_t* job)
+{
+    // Check if there is not a current TX/RX job running
+    if (LMIC.opmode & OP_TXRXPEND) {
+        ESP_LOGI(LOG_TAG_LMIC, "OP_TXRXPEND, not sending");
+    } else {
+        // Prepare upstream data transmission at the next possible time.
+        LMIC_setTxData2(1, (void*) &textMessageCopy, sizeof(text_message_ev_t), 0);
+		probeState.txQueuedCount++;
+        ESP_LOGI(LOG_TAG_LMIC, "Text message queued");
         probeState.loraEventCallback(0);
     }
 }
@@ -171,4 +184,11 @@ void sendProbe(probe_ev_t *probe)
     if (probe)
         memmove(&probeEventCopy, probe, sizeof(probe_ev_t));
     sendProbeJob(&sendjob);
+}
+
+void sendTextMessage(text_message_ev_t *value)
+{
+    if (value)
+        memmove(&textMessageCopy, value, sizeof(text_message_ev_t));
+    sendTextMessageJob(&sendjob);
 }

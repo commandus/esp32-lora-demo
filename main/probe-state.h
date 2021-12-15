@@ -23,6 +23,13 @@ typedef struct {
 
 } probe_ev_t;
 
+
+typedef struct {
+	uint8_t tag;	// 'T', 84, 0x54 - text
+	uint8_t msg[16];
+
+} text_message_ev_t;	// 17
+
 typedef void(*lora_ev_t_cb)(ev_t);
 
 typedef void(*probe_ev_t_cb)(probe_ev_t*);

@@ -14,4 +14,6 @@ void lmicProbeTask(void *env);
 
 void sendProbe(probe_ev_t *probe);
 
+void sendTextMessage(text_message_ev_t *value);
+
 #endif
