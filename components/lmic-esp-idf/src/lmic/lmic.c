@@ -12,6 +12,8 @@
 //! \file
 #include "lmic.h"
 
+#include "esp_log.h"
+
 #if defined(DISABLE_BEACONS) && !defined(DISABLE_PING)
 #error Ping needs beacon tracking
 #endif
@@ -1548,23 +1550,27 @@ static void processRx2Jacc (xref2osjob_t osjob) {
 
 
 static void setupRx2Jacc (xref2osjob_t osjob) {
+    ESP_LOGI("**LMIC**", "setupRx2Jacc");
     LMIC.osjob.func = FUNC_ADDR(processRx2Jacc);
     setupRx2();
 }
 
 
 static void processRx1Jacc (xref2osjob_t osjob) {
+    ESP_LOGI("**LMIC**", "setupRx1Jacc");
     if( LMIC.dataLen == 0 || !processJoinAccept() )
         schedRx12(DELAY_JACC2_osticks, FUNC_ADDR(setupRx2Jacc), LMIC.dn2Dr);
 }
 
 
 static void setupRx1Jacc (xref2osjob_t osjob) {
+    ESP_LOGI("**LMIC**", "setupRx1Jacc");
     setupRx1(FUNC_ADDR(processRx1Jacc));
 }
 
 
 static void jreqDone (xref2osjob_t osjob) {
+    ESP_LOGI("**LMIC**", "jreqDone");
     txDone(DELAY_JACC1_osticks, FUNC_ADDR(setupRx1Jacc));
 }
 

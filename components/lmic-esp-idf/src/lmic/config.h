@@ -25,6 +25,22 @@
 #define CFG_sx1276_radio 1
 #endif
 
+/*
+ * In ESP32 RTC runs at 150.000 hz.
+ *
+ * Each RTC tick has a period of (100/15) usecs. If we factorize this value we have that
+ * (100 / 15) usecs = ((2 * 5 * 2 * 4) / (3 * 5)) usecs = (20 / 3) usecs.
+ *
+ * LMIC needs a tick period between 15.5 usecs and 100 usecs, so we have to multiply RTC ticks
+ * periods for give LMIC ticks periods. This causes, for example, that if we multiply RTC ticks
+ * periods by 3 we have an exact period time of 20 usecs (20 / 3) usecs * 3 = 20 usecs.
+ *
+ * For that reason Lua RTOS is configured to count 1 LMIC tick every 3 RTC ticks, so, for LMIC:
+ *
+ * US_PER_OSTICK = 20
+ * OSTICKS_PER_SEC = 50000
+ *
+ */
 // 20 μs per tick
 // LMIC requires ticks to be 15.5μs - 100 μs long
 #define OSTICKS_PER_SEC 50000

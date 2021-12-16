@@ -191,4 +191,5 @@ void sendTextMessage(text_message_ev_t *value)
     if (value)
         memmove(&textMessageCopy, value, sizeof(text_message_ev_t));
     sendTextMessageJob(&sendjob);
+    ESP_LOGI(LOG_TAG_LMIC,"sendTextMessage");
 }
