@@ -107,7 +107,10 @@ void os_runloop_once() {
     osjob_t* j = NULL;
     hal_disableIRQs();
     // check for runnable jobs
-    if(OS.runnablejobs) {
+    if (OS.runnablejobs) {
+#if LMIC_DEBUG_LEVEL > 1
+        lmic_printf("has OS.runnablejobs\n");
+#endif
         j = OS.runnablejobs;
         OS.runnablejobs = j->next;
     } else if(OS.scheduledjobs && hal_checkTimer(OS.scheduledjobs->deadline)) { // check for expired timed jobs
@@ -125,5 +128,8 @@ void os_runloop_once() {
             lmic_printf("%u: Running job %p, cb %p, deadline %u\n", os_getTime(), j, j->func, has_deadline ? j->deadline : 0);
         #endif
         j->func(j);
+#if LMIC_DEBUG_LEVEL > 1
+        lmic_printf("Done job\n");
+#endif
     }
 }

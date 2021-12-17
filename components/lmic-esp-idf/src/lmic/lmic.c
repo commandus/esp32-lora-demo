@@ -1387,6 +1387,7 @@ static void schedRx12 (ostime_t delay, osjobcb_t func, u1_t dr) {
 }
 
 static void setupRx1 (osjobcb_t func) {
+    ESP_LOGI("**LMIC**", "setupRx1");
     LMIC.txrxFlags = TXRX_DNW1;
     // Turn LMIC.rps from TX over to RX
     LMIC.rps = setNocrc(LMIC.rps,1);
@@ -1394,7 +1395,6 @@ static void setupRx1 (osjobcb_t func) {
     LMIC.osjob.func = func;
     os_radio(RADIO_RX);
 }
-
 
 // Called by HAL once TX complete and delivers exact end of TX time stamp in LMIC.rxtime
 static void txDone (ostime_t delay, osjobcb_t func) {
@@ -1596,6 +1596,7 @@ static void processRx2DnData (xref2osjob_t osjob) {
 
 
 static void setupRx2DnData (xref2osjob_t osjob) {
+    ESP_LOGI("**LMIC**", "setupRx2DnData");
     LMIC.osjob.func = FUNC_ADDR(processRx2DnData);
     setupRx2();
 }
@@ -1863,6 +1864,9 @@ bit_t LMIC_startJoining (void) {
         initJoinLoop();
         LMIC.opmode |= OP_JOINING;
         // reportEvent will call engineUpdate which then starts sending JOIN REQUESTS
+    #if LMIC_DEBUG_LEVEL > 1
+        lmic_printf("%u: Schedule startJoining()\n", os_getTime());
+    #endif
         os_setCallback(&LMIC.osjob, FUNC_ADDR(startJoining));
         return 1;
     }
@@ -2023,6 +2027,7 @@ static void processBeacon (xref2osjob_t osjob) {
 
 
 static void startRxBcn (xref2osjob_t osjob) {
+    ESP_LOGI("**LMIC**", "startRxBcn");
     LMIC.osjob.func = FUNC_ADDR(processBeacon);
     os_radio(RADIO_RX);
 }
@@ -2031,6 +2036,7 @@ static void startRxBcn (xref2osjob_t osjob) {
 
 #if !defined(DISABLE_PING)
 static void startRxPing (xref2osjob_t osjob) {
+    ESP_LOGI("**LMIC**", "startRxPing");
     LMIC.osjob.func = FUNC_ADDR(processPingRx);
     os_radio(RADIO_RX);
 }
@@ -2130,6 +2136,7 @@ static void engineUpdate (void) {
                     ftype = HDR_FTYPE_JREQ;
                 }
                 buildJoinRequest(ftype);
+                
                 LMIC.osjob.func = FUNC_ADDR(jreqDone);
             } else
 #endif // !DISABLE_JOIN
@@ -2143,6 +2150,9 @@ static void engineUpdate (void) {
                     // Device has to react! NWK will not roll over and just stop sending.
                     // Thus, we have N frames to detect a possible lock up.
                   reset:
+                #if LMIC_DEBUG_LEVEL > 1
+                    lmic_printf("%u: Schedule runReset()\n", os_getTime());
+                #endif
                     os_setCallback(&LMIC.osjob, FUNC_ADDR(runReset));
                     return;
                 }

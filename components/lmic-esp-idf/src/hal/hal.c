@@ -88,6 +88,10 @@ void hal_pin_rst (u1_t val) {
 static bool dio_states[NUM_DIO] = { 0 };
 
 static void hal_io_check() {
+#if LMIC_DEBUG_LEVEL > 1
+        lmic_printf("hal_io_check %u\n", os_getTime());
+#endif
+
     uint8_t i;
     for (i = 0; i < NUM_DIO; ++i) {
         if (lmic_pins.dio[i] == LMIC_UNUSED_PIN)

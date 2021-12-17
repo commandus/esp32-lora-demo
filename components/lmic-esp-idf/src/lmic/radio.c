@@ -785,12 +785,18 @@ void radio_irq_handler (u1_t dio) {
         if( flags & IRQ_LORA_TXDONE_MASK ) {
             // save exact tx time
             LMIC.txend = now - us2osticks(43); // TXDONE FIXUP
+#if LMIC_DEBUG_LEVEL > 1
+            lmic_printf("tx time %u\n", LMIC.txend);
+#endif
         } else if( flags & IRQ_LORA_RXDONE_MASK ) {
             // save exact rx time
             if(getBw(LMIC.rps) == BW125) {
                 now -= TABLE_GET_U2(LORA_RXDONE_FIXUP, getSf(LMIC.rps));
             }
             LMIC.rxtime = now;
+#if LMIC_DEBUG_LEVEL > 1
+            lmic_printf("rx time %u\n", LMIC.rxtime);
+#endif
             // read the PDU and inform the MAC that we received something
             LMIC.dataLen = (readReg(LORARegModemConfig1) & SX1272_MC1_IMPLICIT_HEADER_MODE_ON) ?
                 readReg(LORARegPayloadLength) : readReg(LORARegRxNbBytes);
@@ -834,11 +840,19 @@ void radio_irq_handler (u1_t dio) {
     }
     // go from stanby to sleep
     opmode(OPMODE_SLEEP);
+
+    #if LMIC_DEBUG_LEVEL > 1
+        lmic_printf("%u: Schedule assigned job from radio IRQ\n", os_getTime());
+    #endif
+
     // run os job (use preset func ptr)
     os_setCallback(&LMIC.osjob, LMIC.osjob.func);
 }
 
 void os_radio (u1_t mode) {
+        #if LMIC_DEBUG_LEVEL > 1
+            lmic_printf("os_radio %u\n", os_getTime());
+        #endif
     hal_disableIRQs();
     switch (mode) {
       case RADIO_RST:
