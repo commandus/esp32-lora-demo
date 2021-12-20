@@ -5,7 +5,7 @@
 #include <nvs_flash.h>
 
 #include "state-display.h"
-#include "lmic-probe.h"
+#include "lmic-cli.h"
 // #include "wifi-scan.h"
 #include "ble-gatt-server.h"
 
@@ -28,9 +28,8 @@ void app_main()
 	// wifiScanInit();
 
 	lmicProbeInit();
-	// xTaskCreate(lmicPingTask, "Lora", 4096, &pingState, 1, NULL);	// 5000
 
 	bleGattServerInit();
-
+	// xTaskCreate(lmicProbeTask, "Lora", 4096, &pingState, 1, NULL);	// 5000
 	lmicProbeTask(NULL);
 }

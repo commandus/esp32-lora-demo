@@ -1,12 +1,9 @@
-#ifndef LMIC_PING_H_
-#define LMIC_PING_H_	1
-
-#include "freertos/FreeRTOS.h"
-#include "freertos/task.h"
-#include "driver/gpio.h"
-#include "sdkconfig.h"
+#ifndef LMIC_CLI_H_
+#define LMIC_CLI_H_	1
 
 #include "probe-state.h"
+
+void lmicSetOTAA(bool on);
 
 void lmicProbeInit();
 

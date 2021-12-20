@@ -13,7 +13,7 @@
 #include "esp_gatt_common_api.h"
 
 #include "ble-gatt-server.h"
-#include "lmic-probe.h"
+#include "lmic-cli.h"
 
 static void sendBLEProbe(void *mac) {
 	probe_ev_t probe;
