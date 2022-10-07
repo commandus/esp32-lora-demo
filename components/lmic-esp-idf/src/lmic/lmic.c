@@ -666,6 +666,7 @@ static ostime_t nextTx (ostime_t now) {
         for( u1_t ci=0; ci<MAX_CHANNELS; ci++ ) {
             if( (chnl = (chnl+1)) >= MAX_CHANNELS )
                 chnl -=  MAX_CHANNELS;
+        /*        
         #if LMIC_DEBUG_LEVEL > 1
             ESP_LOGI(LOG_TAG_LMIC, "%u: Search channel %d in band %d == %d\n",
                 os_getTime(), chnl, band, LMIC.channelFreq[chnl] & 0x3);
@@ -674,7 +675,7 @@ static ostime_t nextTx (ostime_t now) {
             ESP_LOGI(LOG_TAG_LMIC, "%u: Data rate %d %s\n",
                 os_getTime(), LMIC.datarate & 0xF, (LMIC.channelDrMap[chnl] & (1<<(LMIC.datarate & 0xF))) != 0 ? "enabled" : "disabled");
         #endif
-
+        */
             if( (LMIC.channelMap & (1<<chnl)) != 0  &&  // channel enabled
                 (LMIC.channelDrMap[chnl] & (1<<(LMIC.datarate & 0xF))) != 0  &&
                 band == (LMIC.channelFreq[chnl] & 0x3) ) 
