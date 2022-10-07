@@ -9,6 +9,8 @@ extern ProbeState probeState;
 
 static osjob_t sendjob;
 
+static bool initOTAA;
+
 // Pin mapping 
 const lmic_pinmap lmic_pins = {
     .nss = 5,
@@ -31,10 +33,10 @@ uint8_t APPSKEY[16] = { 0x2B, 0x7E, 0x15, 0x16, 0x28, 0xAE, 0xD2, 0xA6, 0xAB, 0x
 // first. When copying an EUI from ttnctl output, this means to reverse
 // the bytes. For TTN issued EUIs the last bytes should be 0xD5, 0xB3,
 // 0x70.
-const uint8_t APPSEUI[8] = { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 };
+const uint8_t APPSEUI[8] = { 0x18, 0x17, 0x16, 0x15, 0x14, 0x13, 0x12, 0x11 };
 
 // little-endian format
-const uint8_t DEVEUI[8] = { 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 };
+const uint8_t DEVEUI[8] = { 0x08, 0x07, 0x06, 0x05, 0x04, 0x03, 0x02, 0x01 };
 
 // This key should be in big endian format (or, since it is not really a
 // number but a block of memory, endianness does not really apply). In
@@ -53,17 +55,10 @@ void os_getDevKey (u1_t* buf) { memcpy(buf, APPSKEY, 16); }
 void os_getArtEui (u1_t* buf) { memcpy(buf, APPSEUI, 8); }
 void os_getDevEui (u1_t* buf) { memcpy(buf, DEVEUI, 8); }
 
-static bool enableOTAA = false;
-
 probe_ev_t probeEventCopy;
 text_message_ev_t textMessageCopy;
 
 #define LOG_TAG_LMIC "lora-cli" 
-
-
-void lmicSetOTAA(bool on) {
-    enableOTAA = on;
-}
 
 void onEvent(ev_t ev) {
 	probeState.loraEventCallback(ev);
@@ -100,7 +95,7 @@ void onEvent(ev_t ev) {
             ESP_LOGI(LOG_TAG_LMIC, "EV_REJOIN_FAILED");
             break;
         case EV_TXCOMPLETE:
-            ESP_LOGI(LOG_TAG_LMIC, "EV_TXCOMPLETE (includes waiting for RX windows)");
+            ESP_LOGI(LOG_TAG_LMIC, "EV_TXCOMPLETE");
 			probeState.txCompleteCount++;
 
             if (LMIC.txrxFlags & TXRX_ACK)
@@ -129,7 +124,7 @@ void onEvent(ev_t ev) {
             break;
         case EV_REINIT_REQUEST:
             ESP_LOGI(LOG_TAG_LMIC, "EV_REINIT_REQUEST");
-            lmicProbeInit();
+            lmicProbeInit(initOTAA);
             break;
         default:
             ESP_LOGI(LOG_TAG_LMIC, "Unknown event");
@@ -142,7 +137,12 @@ static void sendProbeJob(osjob_t* job)
     // Check if there is not a current TX/RX job running
     if (LMIC.opmode & OP_TXRXPEND) {
         ESP_LOGI(LOG_TAG_LMIC, "OP_TXRXPEND, not sending");
+        probeState.txPendingCount++;
+        if (probeState.txPendingCount > 3) {
+            esp_restart();
+        }
     } else {
+        probeState.txPendingCount = 0;
         // Prepare upstream data transmission at the next possible time.
         LMIC_setTxData2(1, (void*) &probeEventCopy, sizeof(probe_ev_t), 0);
 		probeState.txQueuedCount++;
@@ -156,7 +156,12 @@ static void sendTextMessageJob(osjob_t* job)
     // Check if there is not a current TX/RX job running
     if (LMIC.opmode & OP_TXRXPEND) {
         ESP_LOGI(LOG_TAG_LMIC, "OP_TXRXPEND, not sending");
+        probeState.txPendingCount++;
+        if (probeState.txPendingCount > 3) {
+            esp_restart();
+        }
     } else {
+        probeState.txPendingCount = 0;
         // Prepare upstream data transmission at the next possible time.
         LMIC_setTxData2(1, (void*) &textMessageCopy, sizeof(text_message_ev_t), 0);
 		probeState.txQueuedCount++;
@@ -165,15 +170,16 @@ static void sendTextMessageJob(osjob_t* job)
     }
 }
 
-void lmicProbeInit()
+void lmicProbeInit(bool otaa)
 {
-    if (enableOTAA)
+    initOTAA = otaa;
+    if (otaa)
         lmicOTAAProbeInit();
     else
         lmicABPProbeInit();
 }
 
-void lmicProbeTask(void *env)
+void lmicProbeTask()
 {
     while (1) {
         os_runloop_once();

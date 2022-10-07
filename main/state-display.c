@@ -63,7 +63,7 @@ void displayInit()
 	ssd1306_clear_screen(&probeState.ssdDev, false);
 	ssd1306_contrast(&probeState.ssdDev, 0xff);
 
-	ssd1306_display_text(&probeState.ssdDev, 0, "lorawan-ping", 12, false);
+	ssd1306_display_text(&probeState.ssdDev, 0, "lorawan-ping 1", 14, false);
 
 #if CONFIG_SSD1306_128x64
 #endif // CONFIG_SSD1306_128x64
@@ -142,17 +142,18 @@ void updateScreen()
 			break;
 		default:	//EV_TXCOMPLETE:
 			{
-				size_t sz = snprintf(line, sizeof(line), "TX %d:%d", probeState.txQueuedCount, probeState.txCompleteCount);
-				ssd1306_display_text(&probeState.ssdDev, 4, line, sz, false);
 				if (LMIC.txrxFlags & TXRX_ACK)
-					ssd1306_display_text(&probeState.ssdDev, 4, "ACK", 3, false);
+					ssd1306_display_text(&probeState.ssdDev, 6, "ACK", 3, false);
 				if (LMIC.dataLen) {
 						int sz = snprintf(line, sizeof(line), "Payload %6d", LMIC.dataLen);
-						ssd1306_display_text(&probeState.ssdDev, 4, line, sz, false);
+						ssd1306_display_text(&probeState.ssdDev, 7, line, sz, false);
 				}
 			}
 			break;
 	}
+	size_t sz = snprintf(line, sizeof(line), "TX %d:%d:%d", probeState.txQueuedCount,
+	probeState.txCompleteCount, probeState.txPendingCount);
+	ssd1306_display_text(&probeState.ssdDev, 5, line, sz, false);
 }
 
 void displayLoraEvent(ev_t event)

@@ -8,35 +8,29 @@
 https://raw.githubusercontent.com/matthijskooijman/arduino-lmic/master/examples/ttn-otaa/ttn-otaa.ino
 */
 
-extern uint8_t NWKSKEY[16];
-// LoRaWAN AppSKey, application session key
-extern uint8_t APPSKEY[16];
-// LoRaWAN end-device address (DevAddr)
-static const u4_t DEVADDR = 0x01450340 ; // 01450330 <-- Change this address for every node!
-
 #define TX_INTERVAL 60
 
 extern ProbeState probeState;
 
 #define LOG_TAG_OTAA "lora-otaa" 
 
+static void startJoin(osjob_t* j) {
+    // start joining
+    LMIC_startJoining();
+    // init done - onEvent() callback will be invoked... 
+}
+
 void lmicOTAAProbeInit()
 {
-	// LMIC init
+  	// LMIC init
     os_init();
-	// Reset the MAC state. Session and pending data transfers will be discarded.
+	  // Reset the MAC state. Session and pending data transfers will be discarded.
     LMIC_reset();
-    // Set static session parameters. Instead of dynamically establishing a session
-    // by joining the network, precomputed session parameters are be provided.
-    LMIC_setSession(1, DEVADDR, NWKSKEY, APPSKEY);
-
+    
     LMIC_setupChannel(0, 868900000, DR_RANGE_MAP(DR_SF12, DR_SF7), BAND_CENTI);
     LMIC_setupChannel(1, 869100000, DR_RANGE_MAP(DR_SF12, DR_SF7), BAND_CENTI);
 
-	// Disable link check validation
-    LMIC_setLinkCheckMode(0);
-
-    // TTN uses SF9 for its RX2 window.
+	  // TTN uses SF9 for its RX2 window.
     LMIC.dn2Dr = DR_SF9;
     LMIC.freq = 869100000;
   	// Use a medium spread factor. This can be increased up to SF12 for
@@ -52,4 +46,9 @@ void lmicOTAAProbeInit()
   	// LMIC.rps = updr2rps(LMIC.datarate);
 
     probeState.lmicModemState = LMS_INIT_SUCCESS;
+
+    osjob_t initjob;
+    // setup initial job
+    // os_setCallback(&initjob, startJoin);
+    LMIC_startJoining();
 }
