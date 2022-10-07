@@ -38,6 +38,7 @@ typedef struct
 {
 	uint32_t txQueuedCount;
 	uint32_t txCompleteCount;
+	uint8_t txPendingCount;
 	SSD1306_t ssdDev;
 	LMIC_MODEM_STATE lmicModemState;
 	ev_t lmicEvent;

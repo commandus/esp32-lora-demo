@@ -3,11 +3,9 @@
 
 #include "probe-state.h"
 
-void lmicSetOTAA(bool on);
+void lmicProbeInit(bool otaa);
 
-void lmicProbeInit();
-
-void lmicProbeTask(void *env);
+void lmicProbeTask();
 
 void sendProbe(probe_ev_t *probe);
 
