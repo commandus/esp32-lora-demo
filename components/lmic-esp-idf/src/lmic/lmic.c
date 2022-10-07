@@ -53,6 +53,7 @@ DEFINE_LMIC;
 static void engineUpdate(void);
 static void startScan (void);
 
+#define LOG_TAG_LMIC "L-MIC" 
 
 // ================================================================================
 // BEG OS - default implementations for certain OS suport functions
@@ -551,8 +552,10 @@ static void initDefaultChannels (bit_t join) {
 
     LMIC.channelMap = 0x07;
     u1_t su = join ? 0 : 3;
+ESP_LOGI("**LMIC**", "initDefaultChannels");    
     for( u1_t fu=0; fu<3; fu++,su++ ) {
         LMIC.channelFreq[fu]  = TABLE_GET_U4(iniChannelFreq, su);
+ESP_LOGI("**LMIC**", "freq %d: %d", fu, LMIC.channelFreq[fu]);
         LMIC.channelDrMap[fu] = DR_RANGE_MAP(DR_SF12,DR_SF7);
     }
 
@@ -639,9 +642,9 @@ static void updateTx (ostime_t txbeg) {
     if( LMIC.globalDutyRate != 0 )
         LMIC.globalDutyAvail = txbeg + (airtime<<LMIC.globalDutyRate);
     #if LMIC_DEBUG_LEVEL > 1
-        lmic_printf("%u: Updating info for TX at %u, airtime will be %u. Setting available time for band %d to %u\n", os_getTime(), txbeg, airtime, freq & 0x3, band->avail);
+        ESP_LOGI(LOG_TAG_LMIC, "%u: Updating info for TX at %u, airtime will be %u. Setting available time for band %d to %u\n", os_getTime(), txbeg, airtime, freq & 0x3, band->avail);
         if( LMIC.globalDutyRate != 0 )
-            lmic_printf("%u: Updating global duty avail to %u\n", os_getTime(), LMIC.globalDutyAvail);
+            ESP_LOGI(LOG_TAG_LMIC, "%u: Updating global duty avail to %u\n", os_getTime(), LMIC.globalDutyAvail);
     #endif
 }
 
@@ -653,7 +656,7 @@ static ostime_t nextTx (ostime_t now) {
         for( u1_t bi=0; bi<4; bi++ ) {
             if( (bmap & (1<<bi)) && mintime - LMIC.bands[bi].avail > 0 ) {
                 #if LMIC_DEBUG_LEVEL > 1
-                    lmic_printf("%u: Considering band %d, which is available at %u\n", os_getTime(), bi, LMIC.bands[bi].avail);
+                    ESP_LOGI(LOG_TAG_LMIC, "%u: Considering band %d, which is available at %u\n", os_getTime(), bi, LMIC.bands[bi].avail);
                 #endif
                 mintime = LMIC.bands[band = bi].avail;
             }
@@ -663,15 +666,25 @@ static ostime_t nextTx (ostime_t now) {
         for( u1_t ci=0; ci<MAX_CHANNELS; ci++ ) {
             if( (chnl = (chnl+1)) >= MAX_CHANNELS )
                 chnl -=  MAX_CHANNELS;
+        #if LMIC_DEBUG_LEVEL > 1
+            ESP_LOGI(LOG_TAG_LMIC, "%u: Search channel %d in band %d == %d\n",
+                os_getTime(), chnl, band, LMIC.channelFreq[chnl] & 0x3);
+            ESP_LOGI(LOG_TAG_LMIC, "%u: Channel %s\n",
+                os_getTime(), ((LMIC.channelMap & (1 << chnl)) != 0 ? "enabled" : "disabled"));
+            ESP_LOGI(LOG_TAG_LMIC, "%u: Data rate %d %s\n",
+                os_getTime(), LMIC.datarate & 0xF, (LMIC.channelDrMap[chnl] & (1<<(LMIC.datarate & 0xF))) != 0 ? "enabled" : "disabled");
+        #endif
+
             if( (LMIC.channelMap & (1<<chnl)) != 0  &&  // channel enabled
-                (LMIC.channelDrMap[chnl] & (1<<(LMIC.datarate&0xF))) != 0  &&
-                band == (LMIC.channelFreq[chnl] & 0x3) ) { // in selected band
+                (LMIC.channelDrMap[chnl] & (1<<(LMIC.datarate & 0xF))) != 0  &&
+                band == (LMIC.channelFreq[chnl] & 0x3) ) 
+            { // in selected band
                 LMIC.txChnl = LMIC.bands[band].lastchnl = chnl;
                 return mintime;
             }
         }
         #if LMIC_DEBUG_LEVEL > 1
-            lmic_printf("%u: No channel found in band %d\n", os_getTime(), band);
+            ESP_LOGI(LOG_TAG_LMIC, "%u: No channel found in band %d\n", os_getTime(), band);
         #endif
         if( (bmap &= ~(1<<band)) == 0 ) {
             // No feasible channel  found!
@@ -732,9 +745,9 @@ static ostime_t nextJoinState (void) {
          : DNW2_SAFETY_ZONE+rndDelay(255>>LMIC.datarate));
     #if LMIC_DEBUG_LEVEL > 1
         if (failed)
-            lmic_printf("%u: Join failed\n", os_getTime());
+            ESP_LOGI(LOG_TAG_LMIC, "%u: Join failed\n", os_getTime());
         else
-            lmic_printf("%u: Scheduling next join at %u\n", os_getTime(), LMIC.txend);
+            ESP_LOGI(LOG_TAG_LMIC, "%u: Scheduling next join at %u\n", os_getTime(), LMIC.txend);
     #endif
     // 1 - triggers EV_JOIN_FAILED event
     return failed;
@@ -1051,7 +1064,7 @@ static bit_t decodeFrame (void) {
                             e_.info2  = hdr + (dlen<<8)));
       norx:
 #if LMIC_DEBUG_LEVEL > 0
-        lmic_printf("%u: Invalid downlink, window=%s\n", os_getTime(), window);
+        ESP_LOGI(LOG_TAG_LMIC, "%u: Invalid downlink, window=%s\n", os_getTime(), window);
 #endif
         LMIC.dataLen = 0;
         return 0;
@@ -1334,7 +1347,7 @@ static bit_t decodeFrame (void) {
         LMIC.dataLen = pend-poff;
     }
 #if LMIC_DEBUG_LEVEL > 0
-    lmic_printf("%u: Received downlink, window=%s, port=%d, ack=%d\n", os_getTime(), window, port, ackup);
+    ESP_LOGI(LOG_TAG_LMIC, "%u: Received downlink, window=%s, port=%d, ack=%d\n", os_getTime(), window, port, ackup);
 #endif
     return 1;
 }
@@ -1354,6 +1367,11 @@ static void setupRx2 (void) {
 
 
 static void schedRx12 (ostime_t delay, osjobcb_t func, u1_t dr) {
+
+#if LMIC_DEBUG_LEVEL > 0
+        ESP_LOGI(LOG_TAG_LMIC, "schedRx12, delay=%u\n", delay);
+#endif
+
     ostime_t hsym = dr2hsym(dr);
 
     LMIC.rxsyms = MINRX_SYMS;
@@ -1398,6 +1416,10 @@ static void setupRx1 (osjobcb_t func) {
 
 // Called by HAL once TX complete and delivers exact end of TX time stamp in LMIC.rxtime
 static void txDone (ostime_t delay, osjobcb_t func) {
+#if LMIC_DEBUG_LEVEL > 1
+    ESP_LOGI(LOG_TAG_LMIC, "TX done, delay=%u\n", delay);
+#endif
+
 #if !defined(DISABLE_PING)
     if( (LMIC.opmode & (OP_TRACK|OP_PINGABLE|OP_PINGINI)) == (OP_TRACK|OP_PINGABLE) ) {
         rxschedInit(&LMIC.ping);    // note: reuses LMIC.frame buffer!
@@ -1407,6 +1429,10 @@ static void txDone (ostime_t delay, osjobcb_t func) {
 
     // Change RX frequency / rps (US only) before we increment txChnl
     setRx1Params();
+#if LMIC_DEBUG_LEVEL > 1
+    ESP_LOGI(LOG_TAG_LMIC, "Freq: %u. LMIC.dndr = %u, LMIC.rps = %u\n", LMIC.freq, LMIC.dndr, LMIC.rps);
+#endif
+
     // LMIC.rxsyms carries the TX datarate (can be != LMIC.datarate [confirm retries etc.])
     // Setup receive - LMIC.rxtime is preloaded with 1.5 symbols offset to tune
     // into the middle of the 8 symbols preamble.
@@ -1503,7 +1529,7 @@ static bit_t processJoinAccept (void) {
             if( freq ) {
                 LMIC_setupChannel(chidx, freq, 0, -1);
 #if LMIC_DEBUG_LEVEL > 1
-                lmic_printf("%u: Setup channel, idx=%d, freq=%lu\n", os_getTime(), chidx, (unsigned long)freq);
+                ESP_LOGI(LOG_TAG_LMIC, "%u: Setup channel, idx=%d, freq=%lu\n", os_getTime(), chidx, (unsigned long)freq);
 #endif
             }
         }
@@ -1543,6 +1569,7 @@ static bit_t processJoinAccept (void) {
 
 
 static void processRx2Jacc (xref2osjob_t osjob) {
+    ESP_LOGI("**LMIC**", "processRx2Jacc LMIC.dataLen = %u", LMIC.dataLen);
     if( LMIC.dataLen == 0 )
         LMIC.txrxFlags = 0;  // nothing in 1st/2nd DN slot
     processJoinAccept();
@@ -1557,7 +1584,7 @@ static void setupRx2Jacc (xref2osjob_t osjob) {
 
 
 static void processRx1Jacc (xref2osjob_t osjob) {
-    ESP_LOGI("**LMIC**", "setupRx1Jacc");
+    ESP_LOGI("**LMIC**", "processRx1Jacc LMIC.dataLen = %u", LMIC.dataLen);
     if( LMIC.dataLen == 0 || !processJoinAccept() )
         schedRx12(DELAY_JACC2_osticks, FUNC_ADDR(setupRx2Jacc), LMIC.dn2Dr);
 }
@@ -1570,7 +1597,7 @@ static void setupRx1Jacc (xref2osjob_t osjob) {
 
 
 static void jreqDone (xref2osjob_t osjob) {
-    ESP_LOGI("**LMIC**", "jreqDone");
+    ESP_LOGI("**LMIC**", "jreqDone, setup receieve at %u os ticks", DELAY_JACC1_osticks);
     txDone(DELAY_JACC1_osticks, FUNC_ADDR(setupRx1Jacc));
 }
 
@@ -1865,7 +1892,7 @@ bit_t LMIC_startJoining (void) {
         LMIC.opmode |= OP_JOINING;
         // reportEvent will call engineUpdate which then starts sending JOIN REQUESTS
     #if LMIC_DEBUG_LEVEL > 1
-        lmic_printf("%u: Schedule startJoining()\n", os_getTime());
+        ESP_LOGI(LOG_TAG_LMIC, "%u: Schedule startJoining()\n", os_getTime());
     #endif
         os_setCallback(&LMIC.osjob, FUNC_ADDR(startJoining));
         return 1;
@@ -2046,7 +2073,7 @@ static void startRxPing (xref2osjob_t osjob) {
 // Decide what to do next for the MAC layer of a device
 static void engineUpdate (void) {
 #if LMIC_DEBUG_LEVEL > 0
-    lmic_printf("%u: engineUpdate, opmode=0x%x\n", os_getTime(), LMIC.opmode);
+    ESP_LOGI(LOG_TAG_LMIC, "%u: engineUpdate, opmode=0x%x\n", os_getTime(), LMIC.opmode);
 #endif
     // Check for ongoing state: scan or TX/RX transaction
     if( (LMIC.opmode & (OP_SCAN|OP_TXRXPEND|OP_SHUTDOWN)) != 0 )
@@ -2077,28 +2104,28 @@ static void engineUpdate (void) {
         bit_t jacc = ((LMIC.opmode & (OP_JOINING|OP_REJOIN)) != 0 ? 1 : 0);
         #if LMIC_DEBUG_LEVEL > 1
             if (jacc)
-                lmic_printf("%u: Uplink join pending\n", os_getTime());
+                ESP_LOGI(LOG_TAG_LMIC, "%u: Uplink join pending\n", os_getTime());
             else
-                lmic_printf("%u: Uplink data pending\n", os_getTime());
+                ESP_LOGI(LOG_TAG_LMIC, "%u: Uplink data pending\n", os_getTime());
         #endif
         // Find next suitable channel and return availability time
         if( (LMIC.opmode & OP_NEXTCHNL) != 0 ) {
             txbeg = LMIC.txend = nextTx(now);
             LMIC.opmode &= ~OP_NEXTCHNL;
             #if LMIC_DEBUG_LEVEL > 1
-                lmic_printf("%u: Airtime available at %u (channel duty limit)\n", os_getTime(), txbeg);
+                ESP_LOGI(LOG_TAG_LMIC, "%u: Airtime available at %u (channel duty limit)\n", os_getTime(), txbeg);
             #endif
         } else {
             txbeg = LMIC.txend;
             #if LMIC_DEBUG_LEVEL > 1
-                lmic_printf("%u: Airtime available at %u (previously determined)\n", os_getTime(), txbeg);
+                ESP_LOGI(LOG_TAG_LMIC, "%u: Airtime available at %u (previously determined)\n", os_getTime(), txbeg);
             #endif
         }
         // Delayed TX or waiting for duty cycle?
         if( (LMIC.globalDutyRate != 0 || (LMIC.opmode & OP_RNDTX) != 0)  &&  (txbeg - LMIC.globalDutyAvail) < 0 ) {
             txbeg = LMIC.globalDutyAvail;
             #if LMIC_DEBUG_LEVEL > 1
-                lmic_printf("%u: Airtime available at %u (global duty limit)\n", os_getTime(), txbeg);
+                ESP_LOGI(LOG_TAG_LMIC, "%u: Airtime available at %u (global duty limit)\n", os_getTime(), txbeg);
             #endif
         }
 #if !defined(DISABLE_BEACONS)
@@ -2108,7 +2135,7 @@ static void engineUpdate (void) {
             txbeg + (jacc ? JOIN_GUARD_osticks : TXRX_GUARD_osticks) - rxtime > 0 ) {
 
             #if LMIC_DEBUG_LEVEL > 1
-                lmic_printf("%u: Awaiting beacon before uplink\n", os_getTime());
+                ESP_LOGI(LOG_TAG_LMIC, "%u: Awaiting beacon before uplink\n", os_getTime());
             #endif
 
             // Not enough time to complete TX-RX before beacon - postpone after beacon.
@@ -2121,7 +2148,7 @@ static void engineUpdate (void) {
         // Earliest possible time vs overhead to setup radio
         if( txbeg - (now + TX_RAMPUP) < 0 ) {
             #if LMIC_DEBUG_LEVEL > 1
-                lmic_printf("%u: Ready for uplink\n", os_getTime());
+                ESP_LOGI(LOG_TAG_LMIC, "%u: Ready for uplink\n", os_getTime());
             #endif
             // We could send right now!
         txbeg = now;
@@ -2151,7 +2178,7 @@ static void engineUpdate (void) {
                     // Thus, we have N frames to detect a possible lock up.
                   reset:
                 #if LMIC_DEBUG_LEVEL > 1
-                    lmic_printf("%u: Schedule runReset()\n", os_getTime());
+                    ESP_LOGI(LOG_TAG_LMIC, "%u: Schedule runReset()\n", os_getTime());
                 #endif
                     os_setCallback(&LMIC.osjob, FUNC_ADDR(runReset));
                     return;
@@ -2176,7 +2203,7 @@ static void engineUpdate (void) {
             return;
         }
         #if LMIC_DEBUG_LEVEL > 1
-            lmic_printf("%u: Uplink delayed until %u\n", os_getTime(), txbeg);
+            ESP_LOGI(LOG_TAG_LMIC, "%u: Uplink delayed until %u\n", os_getTime(), txbeg);
         #endif
         // Cannot yet TX
         if( (LMIC.opmode & OP_TRACK) == 0 )
