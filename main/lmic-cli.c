@@ -139,7 +139,7 @@ static void sendProbeJob(osjob_t* job)
         ESP_LOGI(LOG_TAG_LMIC, "OP_TXRXPEND, not sending");
         probeState.txPendingCount++;
         if (probeState.txPendingCount > 3) {
-            esp_restart();
+            // esp_restart();
         }
     } else {
         probeState.txPendingCount = 0;
@@ -158,14 +158,14 @@ static void sendTextMessageJob(osjob_t* job)
         ESP_LOGI(LOG_TAG_LMIC, "OP_TXRXPEND, not sending");
         probeState.txPendingCount++;
         if (probeState.txPendingCount > 3) {
-            esp_restart();
+            // esp_restart();
         }
     } else {
         probeState.txPendingCount = 0;
         // Prepare upstream data transmission at the next possible time.
         LMIC_setTxData2(1, (void*) &textMessageCopy, sizeof(text_message_ev_t), 0);
 		probeState.txQueuedCount++;
-        ESP_LOGI(LOG_TAG_LMIC, "Text message queued");
+        ESP_LOGI(LOG_TAG_LMIC, "Text message queued, FCnt: %d", LMIC.seqnoUp);
         probeState.loraEventCallback(0);
     }
 }
