@@ -151,8 +151,8 @@ void updateScreen()
 			}
 			break;
 	}
-	size_t sz = snprintf(line, sizeof(line), "TX %d:%d:%d", probeState.txQueuedCount,
-	probeState.txCompleteCount, probeState.txPendingCount);
+	size_t sz = snprintf(line, sizeof(line), "TX %d:%d:%d FCnt %d", probeState.txQueuedCount,
+	probeState.txCompleteCount, probeState.txPendingCount, LMIC.seqnoUp);
 	ssd1306_display_text(&probeState.ssdDev, 5, line, sz, false);
 }
 
